@@ -183,6 +183,10 @@ func TestFENFlagStartsFromThatPosition(t *testing.T) {
 	const fen = "7k/P7/8/8/8/8/8/K7 w - - 0 1"
 
 	m := newModel(t, store, fen)
+	if m.mode != modeReplace {
+		t.Fatalf("mode=%v, want the replace prompt", m.mode)
+	}
+	m = press(m, runes("y"))
 
 	if m.mode != modeBoard || m.history.StartFEN() != fen {
 		t.Errorf("mode=%v start=%q", m.mode, m.history.StartFEN())
@@ -316,7 +320,7 @@ func TestPGNCommandDoesNotOverwriteAnExistingFile(t *testing.T) {
 	}
 }
 
-func TestPGNWithOneGameOpensItDirectlyEvenWithASavedSession(t *testing.T) {
+func TestPGNWithOneGameOpensItIgnoringASavedSession(t *testing.T) {
 	store := newStore(t)
 	store.Save(mustHistory(t, "d4"))
 	games := []chess.PGNGame{{StartFEN: chess.StandardFEN, Moves: []string{"e4", "e5"}}}
@@ -325,6 +329,7 @@ func TestPGNWithOneGameOpensItDirectlyEvenWithASavedSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	m = press(m, runes("y"))
 
 	if m.mode != modeBoard || !slices.Equal(m.history.Moves(), []string{"e4", "e5"}) {
 		t.Errorf("mode=%v moves=%v", m.mode, m.history.Moves())
@@ -419,5 +424,27 @@ func TestPickedMoveIsFilledInByEnterAndPlayedByTheNextEnter(t *testing.T) {
 
 	if !slices.Equal(m.history.Moves(), []string{"Nc3"}) {
 		t.Errorf("after the second Enter: moves=%v", m.history.Moves())
+	}
+}
+
+func TestAnythingButYAtTheReplacePromptQuitsAndKeepsTheSavedSession(t *testing.T) {
+	games := []chess.PGNGame{{StartFEN: chess.StandardFEN, Moves: []string{"d4", "d5"}}}
+
+	for name, key := range map[string]tea.KeyMsg{"n": runes("n"), "ctrl+c": {Type: tea.KeyCtrlC}} {
+		store := newStore(t)
+		store.Save(mustHistory(t, "e4", "e5"))
+		m, err := NewFromGames(store, games)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, cmd := m.Update(key)
+
+		if cmd == nil || cmd() != tea.Quit() {
+			t.Errorf("%s: expected tea.Quit", name)
+		}
+		if saved := store.Load(); saved == nil || !slices.Equal(saved.Moves(), []string{"e4", "e5"}) {
+			t.Errorf("%s: saved session changed: %+v", name, saved)
+		}
 	}
 }
