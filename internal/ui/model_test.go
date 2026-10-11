@@ -448,3 +448,15 @@ func TestAnythingButYAtTheReplacePromptQuitsAndKeepsTheSavedSession(t *testing.T
 		}
 	}
 }
+
+func TestFENPositionWithoutMovesIsSaved(t *testing.T) {
+	store := newStore(t)
+	const fen = "7k/P7/8/8/8/8/8/K7 w - - 0 1"
+
+	m := newModel(t, store, fen)
+	m.Update(esc)
+
+	if saved := store.Load(); saved == nil || saved.StartFEN() != fen {
+		t.Errorf("saved = %+v", saved)
+	}
+}

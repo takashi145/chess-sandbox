@@ -361,7 +361,7 @@ func (m *Model) playMove(san string) {
 }
 
 func (m *Model) save() {
-	if len(m.history.Moves()) == 0 {
+	if len(m.history.Moves()) == 0 && m.history.StartFEN() == chess.StandardFEN {
 		return
 	}
 	if !m.store.Save(m.history) {
