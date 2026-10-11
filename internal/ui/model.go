@@ -339,6 +339,9 @@ func (m *Model) playMove(san string) {
 }
 
 func (m *Model) save() {
+	if len(m.history.Moves()) == 0 {
+		return
+	}
 	if !m.store.Save(m.history) {
 		m.message = "Could not save the session"
 	}
