@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -75,6 +76,9 @@ func run(args []string) int {
 
 func loadPGN(path string) ([]chess.PGNGame, error) {
 	if path == "-" {
+		if info, err := os.Stdin.Stat(); err == nil && info.Mode()&os.ModeCharDevice != 0 {
+			return nil, errors.New("stdin is a terminal; pipe a PGN in, e.g. cat game.pgn | chess-sandbox --pgn -")
+		}
 		return chess.ParsePGNGames(os.Stdin)
 	}
 
