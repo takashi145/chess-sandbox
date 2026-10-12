@@ -22,6 +22,7 @@ const (
 	modeBoard
 	modeConfirm
 	modeGames
+	modeReplace
 )
 
 const (
@@ -46,6 +47,8 @@ type Model struct {
 	pending string
 	message string
 	flipped bool
+
+	after mode // the mode to enter once modeReplace is answered with y
 }
 
 func New(store *chess.SessionStore, fen string) (Model, error) {
@@ -57,7 +60,7 @@ func New(store *chess.SessionStore, fen string) (Model, error) {
 			return m, err
 		}
 		m.history = h
-		return m, nil
+		return m.confirmReplacing(), nil
 	}
 
 	if saved := store.Load(); saved != nil {
@@ -83,6 +86,23 @@ func NewFromGames(store *chess.SessionStore, games []chess.PGNGame) (Model, erro
 		m.history = h
 		m.mode = modeBoard
 	}
+	return m.confirmReplacing(), nil
+}
+
+// A game opened with --fen or --pgn replaces the saved session, so ask first when there is one.
+func (m Model) confirmReplacing() Model {
+	if m.store.Load() == nil {
+		return m
+	}
+	m.after, m.mode = m.mode, modeReplace
+	return m
+}
+
+func (m Model) updateReplace(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if key.String() != "y" {
+		return m, tea.Quit
+	}
+	m.mode = m.after
 	return m, nil
 }
 
@@ -107,7 +127,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if key.String() == "ctrl+c" {
+	if key.String() == "ctrl+c" && m.mode != modeReplace {
 		return m.quit()
 	}
 
@@ -120,6 +140,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateConfirm(key)
 	case modeGames:
 		return m.updateGames(key)
+	case modeReplace:
+		return m.updateReplace(key)
 	default:
 		return m.updateBoard(key)
 	}
@@ -339,6 +361,9 @@ func (m *Model) playMove(san string) {
 }
 
 func (m *Model) save() {
+	if len(m.history.Moves()) == 0 && m.history.StartFEN() == chess.StandardFEN {
+		return
+	}
 	if !m.store.Save(m.history) {
 		m.message = "Could not save the session"
 	}
@@ -399,6 +424,8 @@ func (m Model) View() string {
 		m.viewChoose(&b)
 	case modeGames:
 		m.viewGames(&b)
+	case modeReplace:
+		b.WriteString(colored("31", "Replace the saved session with this game? (y/N)"))
 	case modeFEN:
 		b.WriteString("FEN: " + string(m.input) + "_\n")
 		if m.message != "" {
