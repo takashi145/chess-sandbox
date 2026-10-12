@@ -10,7 +10,7 @@ import (
 	"github.com/takashi145/chess-sandbox/internal/ui"
 )
 
-const usage = `Usage: chess-sandbox [--fen "<FEN>" | --pgn <file>] [--version]`
+const usage = `Usage: chess-sandbox [--fen "<FEN>" | --pgn <file|->] [--version]`
 
 // Set at build time by goreleaser.
 var version = "dev"
@@ -74,6 +74,10 @@ func run(args []string) int {
 }
 
 func loadPGN(path string) ([]chess.PGNGame, error) {
+	if path == "-" {
+		return chess.ParsePGNGames(os.Stdin)
+	}
+
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
