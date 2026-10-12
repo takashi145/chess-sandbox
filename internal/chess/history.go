@@ -93,6 +93,11 @@ func (h *History) Preview(input string) Preview {
 	return Preview{State: PreviewInvalid}
 }
 
+// Returns the SAN that `input` would play at the current position, or false if it is not a legal move.
+func (h *History) Resolve(input string) (string, bool) {
+	return playSAN(h.rebuild(h.position), input)
+}
+
 // Plays a move at the current position, dropping any moves ahead. State is unchanged on failure.
 func (h *History) TryPlay(san string) bool {
 	probe := h.rebuild(h.position)
