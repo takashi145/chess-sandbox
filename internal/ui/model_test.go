@@ -421,3 +421,12 @@ func TestPickedMoveIsFilledInByEnterAndPlayedByTheNextEnter(t *testing.T) {
 		t.Errorf("after the second Enter: moves=%v", m.history.Moves())
 	}
 }
+
+func TestDrawIsShownNextToTheLastMove(t *testing.T) {
+	if got := describeLastMove(chess.Snapshot{SAN: "Qf7", MoveNumber: 1, Mover: chess.White, Draw: "stalemate"}); got != "1. Qf7 stalemate" {
+		t.Errorf("after a move: %q", got)
+	}
+	if got := describeLastMove(chess.Snapshot{Draw: "stalemate"}); got != "(start position) stalemate" {
+		t.Errorf("at the start: %q", got)
+	}
+}

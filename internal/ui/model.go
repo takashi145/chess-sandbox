@@ -532,6 +532,9 @@ func (m Model) hint() string {
 
 func describeLastMove(s chess.Snapshot) string {
 	if s.SAN == "" {
+		if s.Draw != "" {
+			return "(start position) " + s.Draw
+		}
 		return "(start position)"
 	}
 
@@ -545,6 +548,9 @@ func describeLastMove(s chess.Snapshot) string {
 		suffix = " checkmate"
 	} else if s.IsCheck {
 		suffix = " check"
+	}
+	if s.Draw != "" {
+		suffix += " " + s.Draw
 	}
 	return fmt.Sprintf("%d%s %s%s", s.MoveNumber, dots, s.SAN, suffix)
 }

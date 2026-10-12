@@ -160,3 +160,24 @@ func TestSnapshotNumbersMovesFromStartFEN(t *testing.T) {
 		t.Errorf("after Ba4: move %d by %v, want 24 by White", white.MoveNumber, white.Mover)
 	}
 }
+
+func TestDrawsAreReported(t *testing.T) {
+	tests := []struct {
+		name  string
+		fen   string
+		moves []string
+		want  string
+	}{
+		{"stalemate", "7k/8/4Q1K1/8/8/8/8/8 w - - 0 1", []string{"Qf7"}, "stalemate"},
+		{"insufficient material", "7k/8/8/8/8/8/1r6/K7 w - - 0 1", []string{"Kxb2"}, "draw by insufficient material"},
+		{"threefold repetition", StandardFEN, []string{"Nf3", "Nf6", "Ng1", "Ng8", "Nf3", "Nf6", "Ng1", "Ng8"}, "draw can be claimed by threefold repetition"},
+		{"fifty-move rule", "7k/8/8/8/8/8/R7/K7 w - - 100 80", nil, "draw can be claimed by the 50-move rule"},
+		{"no draw", StandardFEN, []string{"e4"}, ""},
+	}
+
+	for _, tt := range tests {
+		if got := mustPlay(t, tt.fen, tt.moves...).Draw; got != tt.want {
+			t.Errorf("%s: draw = %q, want %q", tt.name, got, tt.want)
+		}
+	}
+}
