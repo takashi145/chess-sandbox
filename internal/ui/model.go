@@ -297,6 +297,16 @@ func (m Model) submit() (tea.Model, tea.Cmd) {
 	}
 
 	if m.history.CanGoForward() {
+		san, legal := m.history.Resolve(text)
+		if !legal {
+			m.message = "Illegal move: " + text
+			return m, nil
+		}
+		if san == m.history.Moves()[m.history.Position()] {
+			m.history.Forward()
+			m.save()
+			return m, nil
+		}
 		m.pending = text
 		m.mode = modeConfirm
 		return m, nil

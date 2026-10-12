@@ -421,3 +421,27 @@ func TestPickedMoveIsFilledInByEnterAndPlayedByTheNextEnter(t *testing.T) {
 		t.Errorf("after the second Enter: moves=%v", m.history.Moves())
 	}
 }
+
+func TestIllegalMoveAfterGoingBackIsRejectedWithoutAsking(t *testing.T) {
+	m := newModel(t, newStore(t), "")
+	m = typed(typed(m, "e4"), "e5")
+	m = press(m, left)
+
+	m = typed(m, "e4")
+
+	if m.mode != modeBoard || m.message != "Illegal move: e4" || !slices.Equal(m.history.Moves(), []string{"e4", "e5"}) {
+		t.Errorf("mode=%v message=%q moves=%v", m.mode, m.message, m.history.Moves())
+	}
+}
+
+func TestPlayingTheNextMoveOfTheLineStepsForwardWithoutAsking(t *testing.T) {
+	m := newModel(t, newStore(t), "")
+	m = typed(typed(typed(m, "e4"), "e5"), "Nf3")
+	m = press(m, left, left)
+
+	m = typed(m, "e5")
+
+	if m.mode != modeBoard || m.history.Position() != 2 || !slices.Equal(m.history.Moves(), []string{"e4", "e5", "Nf3"}) {
+		t.Errorf("mode=%v pos=%d moves=%v", m.mode, m.history.Position(), m.history.Moves())
+	}
+}
