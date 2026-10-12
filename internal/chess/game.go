@@ -46,6 +46,7 @@ type Snapshot struct {
 	From, To    *Square
 	IsCheck     bool
 	IsCheckmate bool
+	Draw        string
 }
 
 func newGame(fen string) (*lib.Game, error) {
@@ -109,6 +110,7 @@ func snapshot(game *lib.Game) Snapshot {
 	s := Snapshot{
 		Board:      captureBoard(pos),
 		SideToMove: toSide(pos.Turn()),
+		Draw:       drawReason(game),
 	}
 
 	moves := game.Moves()
@@ -170,4 +172,27 @@ func toKind(t lib.PieceType) PieceKind {
 	default:
 		return Pawn
 	}
+}
+
+func drawReason(game *lib.Game) string {
+	switch game.Method() {
+	case lib.Stalemate:
+		return "stalemate"
+	case lib.InsufficientMaterial:
+		return "draw by insufficient material"
+	case lib.FivefoldRepetition:
+		return "draw by fivefold repetition"
+	case lib.SeventyFiveMoveRule:
+		return "draw by the 75-move rule"
+	}
+
+	for _, method := range game.EligibleDraws() {
+		switch method {
+		case lib.ThreefoldRepetition:
+			return "draw can be claimed by threefold repetition"
+		case lib.FiftyMoveRule:
+			return "draw can be claimed by the 50-move rule"
+		}
+	}
+	return ""
 }
